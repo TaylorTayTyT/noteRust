@@ -1,18 +1,20 @@
 
-use std::fs; 
-use std::io; 
+use std::io::Write;
+use std::{fmt::Write, fs}; 
+use std::fs::File;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use rand::rngs::OsRng;
 use rand_unique::{RandomSequence, RandomSequenceBuilder};
 
 pub struct Note {
     pub title: String,
     pub description: String, 
-    pub time_created: u64, 
+    pub time_created: Option<Duration>, 
     pub id: u32
 }
 
 impl Note {
-    fn new(title: String, description: String, time_created: u64, id: u32) -> Note{
+    fn new(title: String, description: String, time_created: Option<Duration>, id: u32) -> Note{
         Note{title, description, time_created, id}
     }
 }
@@ -20,7 +22,7 @@ impl Note {
 pub struct Notebook {
     name: String,
     num_notes: u32,
-    config: RandomSequenceBuilder<u32>
+    sequence: RandomSequence<u32>
 }
 
 impl Notebook {
@@ -31,13 +33,19 @@ impl Notebook {
             Err(err) => println!("Problem with making a directory. Is there a directory that already exists called {}?", name)
         }
         let config = RandomSequenceBuilder::<u32>::rand(&mut OsRng);
-        Self {name, num_notes: 0, config}
+        let sequence = config.into_iter();
+        Self {name, num_notes: 0, sequence}
     }
     pub fn get_name(&self) -> String{
         self.name.clone()
     }
-    pub fn create_note(note: Note) -> Note{
-        
+    pub fn create_note(&mut self, note: &Note) -> Note{
+        let id = self.sequence.next().unwrap();
+        let mut file = File::create(note.title.clone());
+        let duration = note.time_created.unwrap();
+        let contents = String::from(duration.as_secs().to_string());
+        file.unwrap().write_all(contents.as_bytes());
+        Note::new(note.title.clone(), note.description.clone(), note.time_created, id)
     }
     pub fn delete_note(note: Note) -> Note{
 
@@ -63,7 +71,7 @@ mod tests{
 
     #[test]
     fn create_note(){
-
+        let notebook = Notebook::new(String::from("tay's Notebook"));
     }
 
     #[test]
