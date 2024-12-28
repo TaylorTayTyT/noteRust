@@ -1,5 +1,5 @@
 
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::{env, fs}; 
 use std::fs::{File, OpenOptions};
@@ -67,8 +67,20 @@ impl Notebook {
     pub fn update_note(note: Note) -> Note{
         Note { title: String::from("sample"), description: String::from("sample"), time_created: Some(Duration::new(100, 100)), id: 4 }
     }
-    pub fn read_note(note: Note) -> Note{
-        Note { title: String::from("sample"), description: String::from("sample"), time_created: Some(Duration::new(100, 100)), id: 4 }
+    pub fn read_note(&self, title: &str) -> String{
+        //DO THIS NEXT TAYLOR
+        let dir_path = self.parent_dir.clone();
+        let curr_notebook_name = self.name.clone(); 
+        let note_path = dir_path.join(curr_notebook_name).join(title);
+        let file = OpenOptions::new().read(true).open(&note_path);
+        if file.is_err(){
+            let mut error = String::from("Can not read note at ");
+            error.push_str(note_path.as_os_str().to_str().unwrap());
+            return error;
+        };
+        let mut contents = String::new(); 
+        let _ = file.unwrap().read_to_string(&mut contents);
+        contents
     }
     pub fn delete(&mut self) {
         let mut directory = String::from("C:\\Users\\taylo\\Downloads\\testing\\");
@@ -84,7 +96,7 @@ impl Notebook {
 mod tests{
 
     use std::env;
-
+    use regex::Regex;
     use super::*;
 
     #[test]
@@ -116,11 +128,17 @@ mod tests{
         let directory_path = env::current_dir().unwrap();
         let notebook_path = directory_path.join("tay's Notebook").join(&note.title);
         assert!(fs::exists(notebook_path).unwrap());
+        //unwrapped_notebook.delete();
     }
 
     #[test]
     fn read_note(){
-        return; 
+        let mut notebook = Notebook::new(String::from("tay's Notebook")).unwrap();
+        let note = Note::new(String::from("title"), String::from("description"), Some(Duration::new(10, 10)), 4 as u32);
+        let _ = &notebook.create_note(&note);
+        let content = &notebook.read_note(&note.title.as_str());
+        let regex = Regex::new(r"\d+\n(description)").unwrap();
+        assert!(regex.is_match(content), "{}", content);
     }
     #[test]
     fn update_note(){

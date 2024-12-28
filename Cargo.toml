@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 rand = "0.8.5"
 rand-unique = "0.2.2"
+regex = "1.11.1"
